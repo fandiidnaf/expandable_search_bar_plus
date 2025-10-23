@@ -1,5 +1,1 @@
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export 'src/expandable_search_bar_plus.dart';
