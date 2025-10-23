@@ -1,7 +1,4 @@
 
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import './round_search_icon.dart';
 
@@ -10,7 +7,7 @@ class ExpandableSearchBarPlus extends StatefulWidget {
     super.key,
     required this.onTap,
     required this.hintText,
-    required this.editTextController,
+    required this.controller,
     this.width = 200,
     this.iconSize = 45,
     this.gutter = 20,
@@ -30,6 +27,7 @@ class ExpandableSearchBarPlus extends StatefulWidget {
       ),
     ],
     this.backgroundColor = const Color(0xff101010),
+    this.supportMouse = false,
   });
 
   /// Search icon onTap function
@@ -72,7 +70,7 @@ class ExpandableSearchBarPlus extends StatefulWidget {
   final Cubic textFieldAnimationCurve;
 
   /// Controller for textfield
-  final TextEditingController? editTextController;
+  final TextEditingController? controller;
 
   /// Shadow for icon button.
   final List<BoxShadow>? iconBoxShadow;
@@ -112,39 +110,73 @@ class ExpandableSearchBarPlus extends StatefulWidget {
   /// ```
   final Color backgroundColor;
 
+  final bool supportMouse;
+
+
+
   @override
   State<ExpandableSearchBarPlus> createState() => _ExpandableSearchBarPlusState();
 }
 
 class _ExpandableSearchBarPlusState extends State<ExpandableSearchBarPlus> {
   bool isSearchbarHidden = true;
+  late final FocusNode focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    focusNode = FocusNode();
+    focusNode.addListener(focusNodeListener);
+  }
+
+  void focusNodeListener() {
+    if (!focusNode.hasFocus && (widget.controller?.text.isEmpty ?? false)) {
+      setState(() {
+        isSearchbarHidden = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    focusNode.removeListener(focusNodeListener);
+    focusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // bool amIHovering = false;
-    // Offset exitFrom = const Offset(0, 0);
-    return switch (defaultTargetPlatform) {
-      TargetPlatform.android || TargetPlatform.iOS => InkWell(
-        onTap: () {
-          setState(() {
-            isSearchbarHidden = !isSearchbarHidden;
-          });
-        },
-        child: _SearchBar(isSearchbarHidden: isSearchbarHidden, widget: widget),
-      ),
-      _ =>  MouseRegion(
-      onEnter: (details) => setState(() {
+  return MouseRegion(
+    onEnter: widget.supportMouse ? (_) {
+      setState(() {
         isSearchbarHidden = false;
-      }),
-      onExit: (details) => setState(() {
-        // amIHovering = false;
-        isSearchbarHidden = true;
-        // You can use details.position if you are interested in the global position of your pointer.
-        // exitFrom = details.localPosition;
-      }),
-      child: _SearchBar(isSearchbarHidden: isSearchbarHidden, widget: widget),
-    )
-    };
-   
+        focusNode.requestFocus();
+      });
+    } : null,
+    onExit: widget.supportMouse ? (_) {
+      if (widget.controller?.text.isEmpty ?? false) {
+        setState(() {
+          isSearchbarHidden = true;
+          focusNode.unfocus();
+        });
+      }
+    } : null,
+    child: GestureDetector(
+          onTap: () {
+            setState(() {
+              isSearchbarHidden = !isSearchbarHidden;
+              if (isSearchbarHidden) {
+                focusNode.unfocus();
+              } else {
+                focusNode.requestFocus();
+    
+              }
+            });
+            widget.onTap?.call();
+          },
+          child: _SearchBar(isSearchbarHidden: isSearchbarHidden, widget: widget, focusNode: focusNode,),
+        ),
+  );
   }
 }
 
@@ -152,10 +184,12 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.isSearchbarHidden,
     required this.widget,
+    required this.focusNode,
   });
 
   final bool isSearchbarHidden;
   final ExpandableSearchBarPlus widget;
+  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -183,18 +217,20 @@ class _SearchBar extends StatelessWidget {
             duration: widget.textFieldAnimationDuration,
             curve: widget.textFieldAnimationCurve,
             child: TextField(
-              controller: widget.editTextController,
+              controller: widget.controller,
               decoration: InputDecoration(
                 hintText: widget.hintText,
                 border: InputBorder.none,
+                
               ),
+              style: TextStyle(color: Colors.white),
+              focusNode: focusNode,
             ),
           ),
           Positioned(
             right: 0,
             child: InkWell(
-              borderRadius: const BorderRadius.all(Radius.circular(30)),
-              onTap: widget.onTap,
+                borderRadius: const BorderRadius.all(Radius.circular(30)),
               child: RoundSearchIcon(
                 width: widget.iconSize,
                 backgroundColor: widget.iconBackgroundColor,
