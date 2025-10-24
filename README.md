@@ -6,6 +6,16 @@ A **Flutter widget** that provides a beautiful and smooth expandable search bar 
 
 ---
 
+## 📱 Mobile Preview
+
+![Mobile Preview](docs/mobile-preview.gif)
+
+## 🖥️ Desktop Preview
+
+![Desktop Preview](docs/desktop-preview.gif)
+
+---
+
 ## Features
 
 * Smooth expand/collapse animation.
