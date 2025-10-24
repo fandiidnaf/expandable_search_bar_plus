@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Added mobile and desktop preview in README.md
+
 ## 1.0.0
 
 - Added `ExpandableSearchBarPlusController` to control expansion and collapse programmatically.
