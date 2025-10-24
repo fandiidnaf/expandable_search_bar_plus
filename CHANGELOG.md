@@ -1,3 +1,7 @@
+## 1.0.2
+
+- Fix preview not show in README
+
 ## 1.0.1
 
 - Added mobile and desktop preview in README.md

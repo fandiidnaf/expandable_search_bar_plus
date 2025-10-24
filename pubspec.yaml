@@ -2,7 +2,7 @@ name: expandable_search_bar_plus
 description: >
   A modern, customizable, and smooth expandable search bar widget for Flutter.
   Supports tap and hover (for web/desktop), with full controller access to open or close programmatically.
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/fandiidnaf/expandable_search_bar_plus
 repository: https://github.com/fandiidnaf/expandable_search_bar_plus
 issue_tracker: https://github.com/fandiidnaf/expandable_search_bar_plus/issues

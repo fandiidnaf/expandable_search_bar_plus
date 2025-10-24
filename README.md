@@ -8,11 +8,11 @@ A **Flutter widget** that provides a beautiful and smooth expandable search bar 
 
 ## 📱 Mobile Preview
 
-![Mobile Preview](docs/mobile-preview.gif)
+![Mobile Preview](https://raw.githubusercontent.com/fandiidnaf/expandable_search_bar_plus/main/docs/mobile-preview.gif)
 
 ## 🖥️ Desktop Preview
 
-![Desktop Preview](docs/desktop-preview.gif)
+![Desktop Preview](https://raw.githubusercontent.com/fandiidnaf/expandable_search_bar_plus/main/docs/desktop-preview.gif)
 
 ---
 
