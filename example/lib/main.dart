@@ -17,31 +17,34 @@ class MyApp extends StatelessWidget {
       },
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: ExampleSearchBar(),
+        home: SearchExamplePage(),
       ),
     );
   }
 }
 
-class ExampleSearchBar extends StatefulWidget {
-  const ExampleSearchBar({super.key});
+class SearchExamplePage extends StatefulWidget {
+  const SearchExamplePage({super.key});
 
   @override
-  State<ExampleSearchBar> createState() => _ExampleSearchBarState();
+  State<SearchExamplePage> createState() => _SearchExamplePageState();
 }
 
-class _ExampleSearchBarState extends State<ExampleSearchBar> {
-  late final TextEditingController searchController;
+class _SearchExamplePageState extends State<SearchExamplePage> {
+  late final TextEditingController textController;
+  late final ExpandableSearchBarPlusController barController;
 
   @override
   void initState() {
     super.initState();
-    searchController = TextEditingController();
+    textController = TextEditingController();
+    barController = ExpandableSearchBarPlusController();
   }
 
   @override
   void dispose() {
-    searchController.dispose();
+    textController.dispose();
+    barController.dispose();
     super.dispose();
   }
 
@@ -49,11 +52,38 @@ class _ExampleSearchBarState extends State<ExampleSearchBar> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: ExpandableSearchBarPlus(
-          onTap: () => print("search : ${searchController.text}"),
-          hintText: "Search something",
-          controller: searchController,
-         supportMouse: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ExpandableSearchBarPlus(
+              controller: textController,
+              barController: barController,
+              hintText: "Search here...",
+              onChanged: print,
+              onTap: (expanded) =>
+                  debugPrint(expanded ? "Expanded" : "Collapsed"),
+              supportMouse: true,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 10,
+              children: [
+                ElevatedButton(
+                  onPressed: barController.expand,
+                  child: const Text("Expand"),
+                ),
+                ElevatedButton(
+                  onPressed: barController.collapse,
+                  child: const Text("Collapse"),
+                ),
+                ElevatedButton(
+                  onPressed: barController.toggle,
+                  child: const Text("Toggle"),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

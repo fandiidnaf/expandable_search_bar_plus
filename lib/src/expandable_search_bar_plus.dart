@@ -1,17 +1,25 @@
-
 import 'package:flutter/material.dart';
-import './round_search_icon.dart';
+import 'expandable_search_bar_plus_controller.dart';
+import 'round_search_icon.dart';
 
+/// A modern and customizable expandable search bar widget.
+///
+/// This widget animates smoothly between a circular icon and an expanded
+/// text input field. It’s designed to be **mobile-friendly**, and works
+/// on **web and desktop** if `supportMouse` is enabled.
 class ExpandableSearchBarPlus extends StatefulWidget {
   const ExpandableSearchBarPlus({
     super.key,
-    required this.onTap,
-    required this.hintText,
+    this.hintText,
     required this.controller,
-    this.width = 200,
+    this.barController,
+    this.onTap,
+    this.onChanged,
+    this.width = 240,
     this.iconSize = 45,
-    this.gutter = 20,
-    this.animationDuration = const Duration(milliseconds: 500),
+    this.gutter = 16,
+    this.radius = 30,
+    this.animationDuration = const Duration(milliseconds: 400),
     this.animationCurve = Curves.fastOutSlowIn,
     this.textFieldAnimationDuration = const Duration(milliseconds: 200),
     this.textFieldAnimationCurve = Curves.easeInOut,
@@ -19,228 +27,205 @@ class ExpandableSearchBarPlus extends StatefulWidget {
     this.iconColor = const Color(0xff47E10C),
     this.iconBackgroundColor = const Color(0xff353535),
     this.boxShadow = const [
-      BoxShadow(
-        color: Colors.black38,
-        spreadRadius: 4,
-        blurRadius: 2,
-        offset: Offset(0, 2),
-      ),
+      BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
     ],
     this.backgroundColor = const Color(0xff101010),
+    this.textStyle = const TextStyle(color: Colors.white, fontSize: 16),
+    this.hintStyle = const TextStyle(color: Colors.grey, fontSize: 16),
     this.supportMouse = false,
+    this.icon = const Icon(Icons.search_rounded),
   });
 
-  /// Search icon onTap function
-  final void Function()? onTap;
+  /// Called when the search icon is tapped.
+  /// Returns `true` if expanded, otherwise `false`.
+  final void Function(bool isExpanded)? onTap;
 
-  /// Animated bar width.
-  final double? width;
+  /// Called whenever the user changes the text inside the TextField.
+  final ValueChanged<String>? onChanged;
 
-  /// Suffix icon width.
-  ///
-  /// Note: this icon is a sizedBox widget.
-  final double? iconSize;
-
-  /// Some extra space for expanded bar.
-  final double? gutter;
-
-  /// Hint text for textField inside expandable bar.
+  /// Hint text inside the TextField.
   final String? hintText;
 
-  /// Animation duration for expandable bar.
+  /// The controller for the TextField.
+  final TextEditingController controller;
+
+  /// The controller for the SearchBar
   ///
-  /// default is 500 milliseconds
+  /// use this if you want to programmatically control the search bar state
+  final ExpandableSearchBarPlusController? barController;
+
+  /// Width of the expanded search bar.
+  final double width;
+
+  /// Diameter of the search icon container.
+  final double iconSize;
+
+  /// Extra space between the icon and the end of the text field.
+  final double gutter;
+
+  /// Corner radius for the entire bar.
+  final double radius;
+
+  /// Duration for the main expansion animation.
   final Duration animationDuration;
 
-  /// Animation curve for expandable bar.
-  ///
-  /// Default is Curves.fastOutSlowIn
-  ///
-  /// Note: Other curves may be glitchy.
-  final Cubic animationCurve;
+  /// Curve for the expansion animation.
+  final Curve animationCurve;
 
-  /// Animation duration for textField.
-  ///
-  /// Default is 200 milliseconds
+  /// Duration for text field width animation.
   final Duration textFieldAnimationDuration;
 
-  /// Animation curve for textField.
-  ///
-  /// Default is Curves.easeInOut
-  final Cubic textFieldAnimationCurve;
+  /// Curve for text field width animation.
+  final Curve textFieldAnimationCurve;
 
-  /// Controller for textfield
-  final TextEditingController? controller;
-
-  /// Shadow for icon button.
+  /// Custom box shadow for the search icon.
   final List<BoxShadow>? iconBoxShadow;
 
-  /// Button Icon color.
-  /// If not set default will be:
-  /// ```dart
-  /// const Color(0xff47E10C)
-  /// ```
+  /// Color of the search icon.
   final Color iconColor;
 
-  /// Button Icon color.
-  /// If not set default will be:
-  /// ```dart
-  ///const Color(0xff353535)
-  /// ```
+  /// Background color of the circular search icon.
   final Color iconBackgroundColor;
 
-  /// Shadow for animated bar.
-  /// If not set default will be :
-  /// ```dart
-  /// [
-  ///   BoxShadow(
-  ///     color: Colors.black38,
-  ///     spreadRadius: 4,
-  ///     blurRadius: 2,
-  ///     offset: Offset(0, 2),
-  ///   ),
-  /// ]
-  /// ```
-  final List<BoxShadow>? boxShadow;
-
-  /// Background color for animated bar.
-  /// If not set default will be:
-  /// ```dart
-  /// const Color(0xff101010)
-  /// ```
+  /// Background color for the expanded bar.
   final Color backgroundColor;
 
+  /// Box shadow of the expanded bar.
+  final List<BoxShadow>? boxShadow;
+
+  /// Text style for the input.
+  final TextStyle textStyle;
+
+  /// Hint text style.
+  final TextStyle hintStyle;
+
+  /// Whether to support hover expand/collapse for web/desktop.
   final bool supportMouse;
 
-
+  /// The icon widget displayed inside the circle (can be replaced).
+  final Widget icon;
 
   @override
-  State<ExpandableSearchBarPlus> createState() => _ExpandableSearchBarPlusState();
+  State<ExpandableSearchBarPlus> createState() =>
+      _ExpandableSearchBarPlusState();
 }
 
 class _ExpandableSearchBarPlusState extends State<ExpandableSearchBarPlus> {
-  bool isSearchbarHidden = true;
-  late final FocusNode focusNode;
+  bool _isExpanded = false;
+  late final FocusNode _focusNode;
+  ExpandableSearchBarPlusController? _controller;
 
   @override
   void initState() {
     super.initState();
-    focusNode = FocusNode();
-    focusNode.addListener(focusNodeListener);
+    _focusNode = FocusNode()..addListener(_handleFocusChange);
+
+    // initialize internal or external controller
+    _controller = widget.barController ?? ExpandableSearchBarPlusController();
+
+    // listen to external changes
+    _controller!.addListener(() {
+      if (mounted) {
+        setState(() {
+          _isExpanded = _controller!.isExpanded;
+          if (_isExpanded) {
+            _focusNode.requestFocus();
+          } else {
+            _focusNode.unfocus();
+          }
+        });
+      }
+    });
   }
 
-  void focusNodeListener() {
-    if (!focusNode.hasFocus && (widget.controller?.text.isEmpty ?? false)) {
-      setState(() {
-        isSearchbarHidden = true;
-      });
+  void _handleFocusChange() {
+    if (!_focusNode.hasFocus && widget.controller.text.isEmpty) {
+      _updateExpanded(false);
+    }
+  }
+
+  void _updateExpanded(bool value) {
+    if (_isExpanded != value) {
+      setState(() => _isExpanded = value);
+      _controller?.updateInternalState(value);
+      widget.onTap?.call(value);
     }
   }
 
   @override
   void dispose() {
-    focusNode.removeListener(focusNodeListener);
-    focusNode.dispose();
+    _focusNode.removeListener(_handleFocusChange);
+    _focusNode.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-  return MouseRegion(
-    onEnter: widget.supportMouse ? (_) {
-      setState(() {
-        isSearchbarHidden = false;
-        focusNode.requestFocus();
-      });
-    } : null,
-    onExit: widget.supportMouse ? (_) {
-      if (widget.controller?.text.isEmpty ?? false) {
-        setState(() {
-          isSearchbarHidden = true;
-          focusNode.unfocus();
-        });
-      }
-    } : null,
-    child: GestureDetector(
-          onTap: () {
-            setState(() {
-              isSearchbarHidden = !isSearchbarHidden;
-              if (isSearchbarHidden) {
-                focusNode.unfocus();
-              } else {
-                focusNode.requestFocus();
-    
-              }
-            });
-            widget.onTap?.call();
-          },
-          child: _SearchBar(isSearchbarHidden: isSearchbarHidden, widget: widget, focusNode: focusNode,),
-        ),
-  );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({
-    required this.isSearchbarHidden,
-    required this.widget,
-    required this.focusNode,
-  });
-
-  final bool isSearchbarHidden;
-  final ExpandableSearchBarPlus widget;
-  final FocusNode focusNode;
+  void _toggle() => _updateExpanded(!_isExpanded);
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      width: isSearchbarHidden
-          ? widget.iconSize
-          : widget.width! + (widget.gutter as double),
+    final double barWidth = _isExpanded
+        ? widget.width + widget.gutter
+        : widget.iconSize;
+
+    final double textFieldWidth = _isExpanded
+        ? widget.width - widget.iconSize * 0.8
+        : 0.0;
+
+    final Widget content = AnimatedContainer(
+      width: barWidth,
       duration: widget.animationDuration,
       curve: widget.animationCurve,
-      padding: isSearchbarHidden
-          ? const EdgeInsets.all(0)
-          : const EdgeInsets.only(left: 14),
+      padding: _isExpanded ? const EdgeInsets.only(left: 16) : EdgeInsets.zero,
       decoration: BoxDecoration(
         color: widget.backgroundColor,
-        borderRadius: const BorderRadius.all(Radius.circular(30)),
+        borderRadius: BorderRadius.circular(widget.radius),
         boxShadow: widget.boxShadow,
       ),
       child: Stack(
         children: [
           AnimatedContainer(
-            width: isSearchbarHidden
-                ? 0.0
-                : widget.width! - (widget.iconSize as double),
-            height: widget.iconSize,
             duration: widget.textFieldAnimationDuration,
             curve: widget.textFieldAnimationCurve,
+            width: textFieldWidth,
+            height: widget.iconSize,
             child: TextField(
               controller: widget.controller,
+              focusNode: _focusNode,
+              onChanged: widget.onChanged,
+              style: widget.textStyle,
               decoration: InputDecoration(
                 hintText: widget.hintText,
+                hintStyle: widget.hintStyle,
                 border: InputBorder.none,
-                
               ),
-              style: TextStyle(color: Colors.white),
-              focusNode: focusNode,
             ),
           ),
           Positioned(
             right: 0,
             child: InkWell(
-                borderRadius: const BorderRadius.all(Radius.circular(30)),
+              onTap: _toggle,
+              borderRadius: BorderRadius.circular(widget.radius),
               child: RoundSearchIcon(
                 width: widget.iconSize,
                 backgroundColor: widget.iconBackgroundColor,
                 iconColor: widget.iconColor,
                 boxShadow: widget.iconBoxShadow,
+                icon: widget.icon,
               ),
             ),
           ),
         ],
       ),
+    );
+
+    if (!widget.supportMouse) return content;
+
+    return MouseRegion(
+      onEnter: (_) => _updateExpanded(true),
+      onExit: (_) {
+        if (widget.controller.text.isEmpty) _updateExpanded(false);
+      },
+      child: content,
     );
   }
 }
